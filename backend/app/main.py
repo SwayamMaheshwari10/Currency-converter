@@ -1,16 +1,20 @@
+import math
+import os
 from datetime import datetime, timezone
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.db.database import get_connection, initialize_database
 from app.services.conversion_service import ConversionService
 
 app = FastAPI(title="Currency Converter API", version="0.1.0")
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,6 +30,13 @@ class ConversionRequest(BaseModel):
     target_currency: str = Field(min_length=3, max_length=3)
     amount: float = Field(gt=0)
 
+    @field_validator("amount")
+    @classmethod
+    def amount_must_be_finite(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("Amount must be finite")
+        return value
+
 
 class FavoriteRequest(BaseModel):
     source_currency: str = Field(min_length=3, max_length=3)
@@ -35,6 +46,13 @@ class FavoriteRequest(BaseModel):
 class TravelBudgetRequest(BaseModel):
     base_currency: str = Field(min_length=3, max_length=3)
     amount: float = Field(gt=0)
+
+    @field_validator("amount")
+    @classmethod
+    def amount_must_be_finite(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("Amount must be finite")
+        return value
 
 
 @app.on_event("startup")
@@ -65,7 +83,7 @@ async def convert(request: ConversionRequest) -> dict:
     target = validate_currency(request.target_currency)
     try:
         return await service.convert(base, target, request.amount)
-    except (ValueError, KeyError) as error:
+    except (ValueError, KeyError, httpx.HTTPError) as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 
@@ -75,7 +93,7 @@ async def travel_budget(request: TravelBudgetRequest) -> dict:
     targets = [currency for currency in TRAVEL_CURRENCIES if currency != base]
     try:
         return {"base_currency": base, "amount": request.amount, "results": await service.travel_budget(base, request.amount, targets)}
-    except (ValueError, KeyError) as error:
+    except (ValueError, KeyError, httpx.HTTPError) as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 
@@ -87,7 +105,7 @@ async def trends(base: str, target: str, days: int = 30) -> dict:
     target_currency = validate_currency(target)
     try:
         return {"base_currency": base_currency, "target_currency": target_currency, "days": days, "rates": await service.get_trend(base_currency, target_currency, days)}
-    except (ValueError, KeyError) as error:
+    except (ValueError, KeyError, httpx.HTTPError) as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 

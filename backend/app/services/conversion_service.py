@@ -50,8 +50,8 @@ class ConversionService:
     async def travel_budget(self, base_currency: str, amount: float, targets: list[str]) -> list[dict]:
         results = []
         for target in targets:
-            result = await self.convert(base_currency, target, amount)
-            results.append({"currency": target, "amount": result["converted_amount"], "rate": result["rate"]})
+            rate = await self.get_rate(base_currency, target)
+            results.append({"currency": target, "amount": round(amount * rate, 2), "rate": rate})
         return results
 
     async def get_trend(self, base_currency: str, target_currency: str, days: int = 30) -> list[dict]:

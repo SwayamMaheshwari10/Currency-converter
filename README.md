@@ -35,6 +35,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ```
 
 Set `EXCHANGE_RATE_API_KEY` in `.env` for live provider data. Without a key, the development fallback rates are used.
+Set `ALLOWED_ORIGINS` to a comma-separated list when the frontend is hosted outside `http://localhost:5173`.
 
 ### Frontend
 
@@ -63,8 +64,29 @@ The frontend expects the backend at `http://localhost:8000`. Override it with `V
 ## Project structure
 
 ```text
-frontend/   React UI and API client
-backend/    FastAPI routes, services, provider adapter, and SQLite database
+README.md                         Project overview, setup, API, and structure guide
+requirements.txt                  Backend Python dependencies
+.gitignore                        Local environment and generated-file exclusions
+backend/
+	.env.example                    Backend configuration template
+	app/main.py                     FastAPI app, routes, validation, and CORS
+	app/db/database.py              SQLite connection and schema initialization
+	app/providers/exchange_rate_provider.py
+																	Live provider adapter and development fallback rates
+	app/services/conversion_service.py
+																	Caching, conversion, trend, and history business logic
+	tests/                           Backend test location
+frontend/
+	package.json                    Frontend scripts and npm dependencies
+	package-lock.json               Reproducible frontend dependency versions
+	index.html                      Browser document shell and application title
+	src/main.tsx                    React entry point
+	src/App.tsx                     Converter, travel budget, chart, favorites, and history UI
+	src/api.ts                      Typed frontend-to-backend API client
+	src/App.css                     Application layout and responsive styling
+	src/index.css                   Global stylesheet entry
+	public/                         Static browser assets
+	vite.config.ts                  Vite build configuration
 ```
 
 The frontend only talks to the backend API. Provider credentials and persistence stay server-side, which keeps the system easier to test and debug.
