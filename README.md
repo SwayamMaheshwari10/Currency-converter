@@ -2,9 +2,7 @@
 
 A modular currency converter with live exchange rates, SQLite caching, favorites, and a Travel Budgeting mode.
 
-## Current phase
-
-Phase one includes:
+## Features
 
 - Standard currency conversion
 - SQLite-backed rate caching with a one-hour TTL
@@ -12,8 +10,8 @@ Phase one includes:
 - Travel Budgeting comparisons across major currencies
 - Responsive React interface
 - Local fallback rates for development without an API key
-
-Historical 30-day trends and conversion history UI are planned for phase two.
+- 30-day historical trend chart
+- Recent conversion history
 
 ## Stack
 
@@ -55,6 +53,8 @@ The frontend expects the backend at `http://localhost:8000`. Override it with `V
 - `GET /api/currencies`
 - `POST /api/convert`
 - `POST /api/travel-budget`
+- `GET /api/trends?base=USD&target=EUR&days=30`
+- `GET /api/history?limit=8`
 - `GET /api/favorites`
 - `POST /api/favorites`
 - `DELETE /api/favorites/{id}`

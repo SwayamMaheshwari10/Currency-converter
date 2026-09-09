@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.db.database import get_connection
 from app.providers.exchange_rate_provider import ExchangeRateProvider
@@ -53,3 +53,35 @@ class ConversionService:
             result = await self.convert(base_currency, target, amount)
             results.append({"currency": target, "amount": result["converted_amount"], "rate": result["rate"]})
         return results
+
+    async def get_trend(self, base_currency: str, target_currency: str, days: int = 30) -> list[dict]:
+        today = date.today()
+        first_day = today - timedelta(days=days - 1)
+        trend = []
+        with get_connection() as connection:
+            cached_rows = connection.execute(
+                "SELECT rate_date, rate FROM historical_rates WHERE base_currency = ? AND target_currency = ? AND rate_date >= ? ORDER BY rate_date",
+                (base_currency, target_currency, first_day.isoformat()),
+            ).fetchall()
+        cached = {row["rate_date"]: float(row["rate"]) for row in cached_rows}
+        for offset in range(days):
+            rate_date = first_day + timedelta(days=offset)
+            key = rate_date.isoformat()
+            rate = cached.get(key)
+            if rate is None:
+                rate = await self.provider.get_historical_rate(base_currency, target_currency, rate_date)
+                with get_connection() as connection:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO historical_rates VALUES (?, ?, ?, ?, ?)",
+                        (base_currency, target_currency, key, rate, self.provider.now()),
+                    )
+            trend.append({"date": key, "rate": rate})
+        return trend
+
+    def get_history(self, limit: int = 10) -> list[dict]:
+        with get_connection() as connection:
+            rows = connection.execute(
+                "SELECT id, source_currency, target_currency, amount, converted_amount, rate, created_at FROM conversion_history ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]

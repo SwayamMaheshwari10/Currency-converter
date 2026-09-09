@@ -79,6 +79,25 @@ async def travel_budget(request: TravelBudgetRequest) -> dict:
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 
+@app.get("/api/trends")
+async def trends(base: str, target: str, days: int = 30) -> dict:
+    if days < 2 or days > 30:
+        raise HTTPException(status_code=400, detail="Trend range must be between 2 and 30 days")
+    base_currency = validate_currency(base)
+    target_currency = validate_currency(target)
+    try:
+        return {"base_currency": base_currency, "target_currency": target_currency, "days": days, "rates": await service.get_trend(base_currency, target_currency, days)}
+    except (ValueError, KeyError) as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+
+@app.get("/api/history")
+def history(limit: int = 10) -> dict:
+    if limit < 1 or limit > 50:
+        raise HTTPException(status_code=400, detail="History limit must be between 1 and 50")
+    return {"history": service.get_history(limit)}
+
+
 @app.get("/api/favorites")
 def list_favorites() -> dict:
     with get_connection() as connection:

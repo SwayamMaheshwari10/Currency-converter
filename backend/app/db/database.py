@@ -37,5 +37,13 @@ def initialize_database() -> None:
                 rate REAL NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS historical_rates (
+                base_currency TEXT NOT NULL,
+                target_currency TEXT NOT NULL,
+                rate_date TEXT NOT NULL,
+                rate REAL NOT NULL,
+                fetched_at TEXT NOT NULL,
+                PRIMARY KEY (base_currency, target_currency, rate_date)
+            );
             """
         )

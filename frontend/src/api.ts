@@ -32,6 +32,21 @@ export type TravelResult = {
   rate: number
 }
 
+export type TrendPoint = {
+  date: string
+  rate: number
+}
+
+export type ConversionHistory = {
+  id: number
+  source_currency: string
+  target_currency: string
+  amount: number
+  converted_amount: number
+  rate: number
+  created_at: string
+}
+
 export const convert = (base_currency: string, target_currency: string, amount: number) =>
   request<ConversionResult>('/convert', {
     method: 'POST',
@@ -53,3 +68,8 @@ export const getTravelBudget = (base_currency: string, amount: number) =>
     method: 'POST',
     body: JSON.stringify({ base_currency, amount }),
   })
+
+export const getTrend = (base_currency: string, target_currency: string) =>
+  request<{ base_currency: string; target_currency: string; days: number; rates: TrendPoint[] }>(`/trends?base=${base_currency}&target=${target_currency}&days=30`)
+
+export const getHistory = () => request<{ history: ConversionHistory[] }>('/history?limit=8')
