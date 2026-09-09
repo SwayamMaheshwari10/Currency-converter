@@ -25,10 +25,11 @@ A modular currency converter with live exchange rates, SQLite caching, favorites
 ### Backend
 
 ```powershell
-cd backend
+cd "C:\path\to\currency-converter"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cd backend
 Copy-Item .env.example .env
 python -m uvicorn app.main:app --reload --port 8000
 ```
